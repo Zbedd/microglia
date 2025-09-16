@@ -1,0 +1,20 @@
+inputs:
+  - "data/sample_data/*.nd2"   # files, globs, or directories
+
+output_root: "results"
+
+channels:
+  egfp_keywords: ["egfp", "gfp"]
+  nuc_keywords:  ["bfp", "sgbfp", "dapi", "nuc"]
+
+preprocessing:
+  projection: "max"   # required; only 'max' supported
+
+plugin:
+  enabled: true
+  plugin_name: "microglia-analyzer"
+  launch_gui: true
+  # command_ids: []  # optional: specify preferred plugin command IDs if needed
+
+aggregation:
+  write_global_summary: true
