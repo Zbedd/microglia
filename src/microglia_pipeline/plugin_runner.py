@@ -128,7 +128,15 @@ def try_run_plugin(
             errors.append(f"{cid}: failed to resolve callable - {e}")
             continue
 
+        # Support common alias names (some plugins expect napari_viewer instead of viewer)
         call_kwargs = {k: v for k, v in base_kwargs.items() if k in allowed}
+        if "viewer" in call_kwargs and "napari_viewer" in allowed and "napari_viewer" not in call_kwargs:
+            call_kwargs["napari_viewer"] = call_kwargs["viewer"]
+        # Some commands may use 'image_layer' or 'nuclei_layer'
+        if "image" in call_kwargs and "image_layer" in allowed and "image_layer" not in call_kwargs:
+            call_kwargs["image_layer"] = call_kwargs["image"]
+        if "nuclei" in call_kwargs and "nuclei_layer" in allowed and "nuclei_layer" not in call_kwargs:
+            call_kwargs["nuclei_layer"] = call_kwargs["nuclei"]
 
         try:
             cmd.exec(call_kwargs)
@@ -136,7 +144,8 @@ def try_run_plugin(
             errors.append(f"{cid}: execution error - {e}")
             continue
 
-        if _new_layers_since(viewer, baseline):
+        new_layers = _new_layers_since(viewer, baseline)
+        if new_layers:
             return True
         else:
             errors.append(f"{cid}: executed but produced no new layers")

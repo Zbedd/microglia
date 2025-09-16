@@ -1,40 +1,45 @@
-# Microglia Segmentation Pipeline (Napari + Microglia-Analyzer)
+# Microglia ND2 Projection Toolkit
 
-Config-driven, end-to-end pipeline for segmenting **EGFP-labeled microglia** from **multipoint ND2 confocal z-stacks** and quantifying morphology (e.g., branches), driven via a napari plugin (e.g., Microglia-Analyzer). No new training data required.
+Minimal, config-driven utilities to:
+
+1. Read **multipoint (XY) ND2 z-stacks** containing EGFP (and nuclei) channels.
+2. Generate per‑XY **maximum intensity projections (MIPs)** and store them on disk.
+3. Load previously generated projections into **napari** for manual inspection or downstream interactive analysis (e.g., with external plugins like Microglia-Analyzer run manually by the user).
+
+This repository no longer attempts to automate third‑party plugin execution (widget/button workflows proved unsuitable for robust headless control). Instead it focuses on a clean separation of data preparation (deterministic, reproducible) and interactive analysis (exploratory, user‑driven).
 
 ---
 
 ## Features
 
-- ✅ Read **ND2 multipoint (XY)** with **Z** stacks
-- ✅ Build **maximum-intensity projections (MIP)** per XY
-- ✅ Drive a napari plugin (e.g., Microglia-Analyzer) programmatically
-- ✅ Save per-XY outputs: `mip_egfp.tif`, `mip_nuc.tif` (if present), `segmentation_labels.tif`, `features.csv`
-- ✅ Write per-ND2 summaries and a **global** `results/summary.csv`
-- ✅ All behavior controlled by a single **YAML config**
+- ✅ Read **ND2 multipoint (XY)** z-stacks with **Z** dimension
+- ✅ Channel keyword matching (EGFP + nuclei) with fail‑fast validation
+- ✅ Generate per‑XY MIPs (`mip_egfp.tif`, `mip_nuc.tif`)
+- ✅ Deterministic on-disk layout: `results/<nd2_stem>/XY_###/`
+- ✅ Simple two‑stage workflow: projection generation → interactive viewing
+- ✅ Single YAML config controls inputs and output root
 
 ---
 
 ## Repository Layout
 
 ```
-|-- data/                      # (optional) place .nd2 inputs here
-|-- docs/
-|   `-- USAGE.md               # optional notes
-|-- results/                   # default output root
-|-- scripts/
-|   `-- run_microglia_pipeline.py
-|-- src/
-|   `-- microglia_pipeline/
-|       |-- __init__.py
-|       |-- aggregate.py
-|       |-- config.py          # YAML loader & schema
-|       |-- io_nd2.py
-|       |-- orchestrate.py     # orchestrates per config
-|       |-- plugin_runner.py
-|       `-- preprocess.py
-`-- tests/
-  `-- test_smoke.py
+data/                 # (optional) place .nd2 inputs here (globbed via config)
+docs/
+  USAGE.md
+results/              # generated projections live here
+scripts/
+  generate_projections.py   # stage 1: produce MIPs
+  view_projections.py       # stage 2: open all MIPs in napari
+src/
+  microglia_pipeline/
+    __init__.py
+    config.py        # YAML schema & loader
+    io_nd2.py        # ND2 reading + channel detection
+    preprocess.py    # max projection + saving helpers
+tests/
+  test_smoke.py
+config.yaml
 ```
 
 ---
@@ -48,11 +53,11 @@ Config-driven, end-to-end pipeline for segmenting **EGFP-labeled microglia** fro
 conda create -n microglia python=3.11 -y
 conda activate microglia
 
-# core dependencies
+# core dependencies (projection stage)
 pip install nd2 tifffile numpy pandas pyyaml
 
-# napari GUI + plugin (plugin must be installed and discoverable via npe2)
-pip install "napari[all]" microglia-analyzer
+# for viewing/interacting
+pip install "napari[all]"
 ```
 
 **(Optional) Developer install**
@@ -67,7 +72,7 @@ pip install -e .
 
 ## Configuration
 
-All runtime settings are in a single YAML file.
+All runtime settings live in `config.yaml` (kept intentionally minimal):
 
 ```yaml
 inputs:
@@ -80,99 +85,68 @@ channels:
   nuc_keywords:  ["bfp", "sgbfp", "dapi", "nuc"]
 
 preprocessing:
-  projection: "max"         # only 'max' is supported
-
-plugin:
-  enabled: true
-  plugin_name: "microglia-analyzer"
-  launch_gui: true          # napari viewer is shown
-
-aggregation:
-  write_global_summary: true
+  projection: "max"         # only 'max' currently supported
 ```
 
 ---
 
-## Running the Pipeline
+## Workflow
+
+### 1. Generate Projections
+
+Reads ND2 files, detects EGFP + nuclei channels by keyword, produces per‑XY MIPs.
 
 ```bash
-python scripts/run_microglia_pipeline.py
+python scripts/generate_projections.py
 ```
 
-- The script loads `config.yaml` from the repository root (no CLI args parsed).
-- Per-ND2 outputs → `results/<nd2_stem>/XY_###/…`
-- Per-ND2 summary → `results/<nd2_stem>/summary.csv`
-- Global summary (if enabled) → `results/summary.csv`
+Output layout:
 
-The napari GUI opens and the plugin is driven programmatically with minimal user interaction.
+```
+results/
+  <nd2_stem>/
+    XY_000/
+      mip_egfp.tif
+      mip_nuc.tif
+    XY_001/
+      ...
+```
 
-### Visualizing Pre-Plugin Projections
+### 2. View Projections
 
-If you want to quickly load and inspect the maximum-intensity projections (exactly as the main pipeline would produce them) without invoking the plugin, use:
+Loads every `mip_*.tif` into a napari viewer using consistent naming.
 
 ```bash
-python scripts/visualize_projection.py
+python scripts/view_projections.py
 ```
 
-This script:
-- Reuses the normal ND2 reading + MIP generation logic.
-- Suppresses plugin execution while still opening napari with the same layer naming.
-- Does not alter or reprocess pixel data beyond what the main pipeline already does.
-
-Add an optional `visualize` section to `config.yaml` to document intent (not required for the script to run):
-
-```yaml
-visualize:
-  enabled: false
-  number_of_examples: 4   # (reserved for future sampling logic if needed)
-```
-
-All temporary visualization uses the regular `results/<nd2_stem>/XY_###/` layout created by the standard processing function. No additional derivative images are written.
+You can now manually launch and operate any napari plugin (e.g., Microglia-Analyzer) from the GUI; outputs you create manually are not automatically captured by this toolkit (by design—separation of concerns).
 
 ---
 
 ## Outputs
 
-For each ND2 and XY:
-
-```
-results/
-  <nd2_basename>/
-    XY_000/
-      mip_egfp.tif
-      mip_nuc.tif            # present if nuclear channel exists
-      segmentation_labels.tif
-      features.csv           # per-XY summary
-    XY_001/
-      ...
-  summary.csv                # per-ND2 summary
-summary.csv                  # global, across all ND2s (if enabled)
-```
+Only per‑XY projection TIFFs are produced. No automatic segmentation, feature tables, or aggregation are performed in this streamlined version.
 
 ---
 
 ## How It Works (High Level)
 
-1. **IO & Preprocessing**
-  - Load ND2 multipoint z-stacks
-  - Detect EGFP and optional nuclei channels via **keyword matching**
-  - Build **MIP** per XY (represents 3D morphology in 2D)
-
-2. **Segmentation**
-  - Auto-run a napari plugin (e.g., Microglia-Analyzer) programmatically (plugin must be installed)
-
-3. **Quantification**
-  - Save plugin-produced masks and features (if any)
-  - Aggregate per-XY → per-ND2 → global CSV
+1. Discover ND2 files by glob(s) from the config.
+2. For each file and each XY position:
+   - Extract channel volumes, verify Z + C axes exist.
+   - Identify EGFP & nuclei channels via case-insensitive substring match.
+   - Compute max projection along Z.
+   - Persist MIPs to deterministic folder structure.
+3. (Optional) Load saved MIPs in napari for interactive exploration.
 
 ---
 
 ## Tips & Troubleshooting
 
-- **Channel detection**  
-  Channels are matched by substring keywords in ND2 metadata. The reader currently requires both EGFP and nuclei channels to be present.
-- **3D fidelity**  
-  This pipeline uses **MIP** per XY to keep the output representative of 3D morphology without requiring 3D model training.
+- Channel detection: Provide sufficiently specific substrings in `channels.egfp_keywords` / `channels.nuc_keywords`.
+- Missing channels: The reader fails fast if required channel keywords are not found.
+- Large files: The `nd2` reader may produce dask arrays; projections are computed after loading each position.
 
 ---
 

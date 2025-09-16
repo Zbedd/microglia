@@ -10,18 +10,4 @@ channels:
 preprocessing:
   projection: "max"   # required; only 'max' supported
 
-plugin:
-  enabled: true
-  plugin_name: "microglia-analyzer"
-  launch_gui: true
-  # command_ids: []  # optional: specify preferred plugin command IDs if needed
-
-aggregation:
-  write_global_summary: true
-
-visualize:
-  enabled: true            # Enable when using visualize_projection.py script
-  number_of_examples: 4     # How many XY positions to sample/visualize
-  random_sample: true       # Randomly sample if more positions available
-  save_grid: true           # Save combined grid image
-  save_individual: true     # Save individual EGFP/nuc MIPs
+# Legacy plugin/aggregation keys removed in projection-only mode.
