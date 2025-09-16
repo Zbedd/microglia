@@ -241,12 +241,13 @@ mlruns/
 .mlflow/
 
 # Data & results handling (project specific)
-# Ignore everything in data/ except the sample_data subfolder (and its committed contents)
-data/*
-!data/sample_data/
-!data/sample_data/**
-# Keep any README or documentation files at top level of data/
+# Ignore all data by default (users provide their own ND2 files locally)
+data/**
 !data/README.md
+!data/**/README.md
+
+# Explicitly ignore raw ND2 microscopy files everywhere
+*.nd2
 
 # Ignore all generated results while keeping documentation placeholders
 results/**

@@ -24,7 +24,7 @@ This repository no longer attempts to automate third‑party plugin execution (w
 ## Repository Layout
 
 ```
-data/                 # (optional) place .nd2 inputs here (globbed via config)
+data/                 # place your own .nd2 inputs here (NOT tracked; large files ignored)
 docs/
   USAGE.md
 results/              # generated projections live here
@@ -89,6 +89,14 @@ preprocessing:
 ```
 
 ---
+
+## Data Inputs
+
+No sample ND2 file is tracked (large microscopy binaries are excluded to keep the repository lightweight).
+
+Place your own `.nd2` file(s) under `data/` (any subfolder) or elsewhere, then reference them via glob(s) in `config.yaml` (e.g. `data/**/*.nd2`).
+
+Future enhancement: a small synthetic generator script could optionally produce a mock ND2; open an issue if desired.
 
 ## Workflow
 
