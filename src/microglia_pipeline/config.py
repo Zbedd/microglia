@@ -25,6 +25,14 @@ class AggregationConfig:
     write_global_summary: bool = True
 
 @dataclass
+class VisualizeConfig:
+    enabled: bool = False                 # Off by default; script can ignore if absent
+    number_of_examples: int = 4            # How many XY positions to visualize
+    random_sample: bool = True             # If more positions than requested, sample randomly
+    save_grid: bool = True                 # Save a montage/grid image
+    save_individual: bool = True           # Save individual EGFP + nuclei MIPs
+
+@dataclass
 class Config:
     inputs: List[str]
     output_root: str = "results"
@@ -32,6 +40,7 @@ class Config:
     preprocessing: PreprocConfig = field(default_factory=PreprocConfig)
     plugin: PluginConfig = field(default_factory=PluginConfig)
     aggregation: AggregationConfig = field(default_factory=AggregationConfig)
+    visualize: VisualizeConfig = field(default_factory=VisualizeConfig)
 
 def load_config(path: str | Path) -> Config:
     with open(path, "r") as f:
@@ -43,6 +52,7 @@ def load_config(path: str | Path) -> Config:
         preprocessing=PreprocConfig(**data.get("preprocessing", {})),
         plugin=PluginConfig(**data.get("plugin", {})),
         aggregation=AggregationConfig(**data.get("aggregation", {})),
+        visualize=VisualizeConfig(**data.get("visualize", {})),
     )
     # Fail-fast validation
     if not cfg.inputs:

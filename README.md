@@ -106,6 +106,29 @@ python scripts/run_microglia_pipeline.py
 
 The napari GUI opens and the plugin is driven programmatically with minimal user interaction.
 
+### Visualizing Pre-Plugin Projections
+
+If you want to quickly load and inspect the maximum-intensity projections (exactly as the main pipeline would produce them) without invoking the plugin, use:
+
+```bash
+python scripts/visualize_projection.py
+```
+
+This script:
+- Reuses the normal ND2 reading + MIP generation logic.
+- Suppresses plugin execution while still opening napari with the same layer naming.
+- Does not alter or reprocess pixel data beyond what the main pipeline already does.
+
+Add an optional `visualize` section to `config.yaml` to document intent (not required for the script to run):
+
+```yaml
+visualize:
+  enabled: false
+  number_of_examples: 4   # (reserved for future sampling logic if needed)
+```
+
+All temporary visualization uses the regular `results/<nd2_stem>/XY_###/` layout created by the standard processing function. No additional derivative images are written.
+
 ---
 
 ## Outputs

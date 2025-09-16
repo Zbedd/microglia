@@ -93,14 +93,5 @@ def process_nd2_file(nd2_path: Path, cfg: Config) -> None:
 
     aggregate_per_nd2(Path(cfg.output_root), nd2_stem)
 
-def run_from_config(cfg: Config) -> None:
-    nd2_paths = _collect_nd2_paths(cfg.inputs)
-    ensure_dir(Path(cfg.output_root))
-    for nd2_path in nd2_paths:
-        process_nd2_file(nd2_path, cfg)
-
-    if cfg.aggregation.write_global_summary:
-        aggregate_all(Path(cfg.output_root))
-
-    # keep napari alive for inspection
-    napari.run()
+## Note: run_from_config has been intentionally removed. The orchestration
+## logic now lives directly inside scripts/run_microglia_pipeline.py:main().

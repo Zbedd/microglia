@@ -240,4 +240,14 @@ wandb/
 mlruns/
 .mlflow/
 
-# Note: /data directory is intentionally NOT ignored to keep data files in version control
+# Data & results handling (project specific)
+# Ignore everything in data/ except the sample_data subfolder (and its committed contents)
+data/*
+!data/sample_data/
+!data/sample_data/**
+# Keep any README or documentation files at top level of data/
+!data/README.md
+
+# Ignore all generated results while keeping documentation placeholders
+results/**
+!results/README.md
