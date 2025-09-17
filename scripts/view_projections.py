@@ -11,16 +11,31 @@ except Exception as e:
     raise ImportError("napari is required to view projections. Install it and retry.") from e
 
 from microglia_pipeline.config import load_config
+import re
 
 
-def _iter_projection_dirs(output_root: Path):
-    for nd2_dir in sorted(output_root.iterdir()):
-        if not nd2_dir.is_dir():
-            continue
-        xy_dirs = sorted([p for p in nd2_dir.glob('XY_*') if p.is_dir()])
-        if not xy_dirs:
-            continue
-        yield nd2_dir, xy_dirs
+def _discover_flat(output_root: Path):
+    egfp_dir = output_root / 'egfp'
+    nuc_dir = output_root / 'nuc'
+    if not egfp_dir.exists() and not nuc_dir.exists():
+        raise FileNotFoundError(
+            f"Expected flat layout under {output_root}/egfp and {output_root}/nuc. Run generate_projections first." )
+    pattern = re.compile(r'^(?P<stem>.+)_XY(?P<xy>\d{3})\.tif$', re.IGNORECASE)
+    entries = {}
+    if egfp_dir.exists():
+        for f in sorted(egfp_dir.glob('*.tif')):
+            m = pattern.match(f.name)
+            if m:
+                key = (m.group('stem'), m.group('xy'))
+                entries.setdefault(key, {})['egfp'] = f
+    if nuc_dir.exists():
+        for f in sorted(nuc_dir.glob('*.tif')):
+            m = pattern.match(f.name)
+            if m:
+                key = (m.group('stem'), m.group('xy'))
+                entries.setdefault(key, {})['nuc'] = f
+    for (stem, xy), files in sorted(entries.items(), key=lambda x: (x[0][0], x[0][1])):
+        yield stem, xy, files.get('egfp'), files.get('nuc')
 
 
 def view():
@@ -31,24 +46,20 @@ def view():
         raise FileNotFoundError(f"Output root {out_root} does not exist. Run generate_projections first.")
 
     v = napari.Viewer(title='Microglia Projections')
-    for nd2_dir, xy_dirs in _iter_projection_dirs(out_root):
-        nd2_stem = nd2_dir.name
-        for xy_dir in xy_dirs:
-            xy_name = xy_dir.name  # XY_###
-            egfp = xy_dir / 'mip_egfp.tif'
-            nuc  = xy_dir / 'mip_nuc.tif'
-            if egfp.exists():
-                try:
-                    egfp_arr = tiff.imread(egfp)
-                    v.add_image(egfp_arr, name=f"{nd2_stem}_{xy_name}_EGFP_MIP", blending='additive', colormap='green')
-                except Exception as e:  # pragma: no cover - defensive
-                    print(f"[warn] Failed to load {egfp}: {e}")
-            if nuc.exists():
-                try:
-                    nuc_arr = tiff.imread(nuc)
-                    v.add_image(nuc_arr, name=f"{nd2_stem}_{xy_name}_NUC_MIP", blending='additive', colormap='blue')
-                except Exception as e:  # pragma: no cover
-                    print(f"[warn] Failed to load {nuc}: {e}")
+    for stem, xy, egfp_path, nuc_path in _discover_flat(out_root):
+        xy_tag = f"XY_{xy}"
+        if egfp_path and egfp_path.exists():
+            try:
+                egfp_arr = tiff.imread(egfp_path)
+                v.add_image(egfp_arr, name=f"{stem}_{xy_tag}_EGFP_MIP", blending='additive', colormap='green')
+            except Exception as e:  # pragma: no cover
+                print(f"[warn] Failed to load {egfp_path}: {e}")
+        if nuc_path and nuc_path.exists():
+            try:
+                nuc_arr = tiff.imread(nuc_path)
+                v.add_image(nuc_arr, name=f"{stem}_{xy_tag}_NUC_MIP", blending='additive', colormap='blue')
+            except Exception as e:  # pragma: no cover
+                print(f"[warn] Failed to load {nuc_path}: {e}")
     napari.run()
 
 

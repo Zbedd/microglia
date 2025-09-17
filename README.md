@@ -14,8 +14,8 @@ This repository no longer attempts to automate third‑party plugin execution (w
 
 - ✅ Read **ND2 multipoint (XY)** z-stacks with **Z** dimension
 - ✅ Channel keyword matching (EGFP + nuclei) with fail‑fast validation
-- ✅ Generate per‑XY MIPs (`mip_egfp.tif`, `mip_nuc.tif`)
-- ✅ Deterministic on-disk layout: `results/<nd2_stem>/XY_###/`
+- ✅ Generate per‑XY MIPs
+- ✅ Deterministic on-disk layout (flat): `results/egfp/<nd2_stem>_XY###.tif` and `results/nuc/<nd2_stem>_XY###.tif`
 - ✅ Simple two‑stage workflow: projection generation → interactive viewing
 - ✅ Single YAML config controls inputs and output root
 
@@ -108,17 +108,21 @@ Reads ND2 files, detects EGFP + nuclei channels by keyword, produces per‑XY MI
 python scripts/generate_projections.py
 ```
 
-Output layout:
+Output layout (current flat format):
 
 ```
 results/
-  <nd2_stem>/
-    XY_000/
-      mip_egfp.tif
-      mip_nuc.tif
-    XY_001/
-      ...
+  egfp/
+    <nd2_stem>_XY000.tif
+    <nd2_stem>_XY001.tif
+    ...
+  nuc/
+    <nd2_stem>_XY000.tif
+    <nd2_stem>_XY001.tif
+    ...
 ```
+
+Legacy (previous) layout with nested `XY_###/mip_*.tif` folders is no longer produced; regenerate projections if you still have the old structure.
 
 ### 2. View Projections
 
@@ -134,7 +138,7 @@ You can now manually launch and operate any napari plugin (e.g., Microglia-Analy
 
 ## Outputs
 
-Only per‑XY projection TIFFs are produced. No automatic segmentation, feature tables, or aggregation are performed in this streamlined version.
+Only per‑XY projection TIFFs are produced (separate EGFP and nuclei directories). No automatic segmentation, feature tables, or aggregation are performed in this streamlined version.
 
 ---
 
@@ -145,7 +149,7 @@ Only per‑XY projection TIFFs are produced. No automatic segmentation, feature 
    - Extract channel volumes, verify Z + C axes exist.
    - Identify EGFP & nuclei channels via case-insensitive substring match.
    - Compute max projection along Z.
-   - Persist MIPs to deterministic folder structure.
+  - Persist MIPs to flat deterministic folder structure (`results/egfp`, `results/nuc`).
 3. (Optional) Load saved MIPs in napari for interactive exploration.
 
 ---

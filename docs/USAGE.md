@@ -37,7 +37,17 @@ preprocessing:
 python scripts/generate_projections.py
 ```
 
-Outputs land in `results/<nd2_stem>/XY_###/mip_*.tif`.
+Outputs land in the flat directory layout:
+
+```
+results/
+	egfp/<nd2_stem>_XY000.tif
+	egfp/<nd2_stem>_XY001.tif
+	nuc/<nd2_stem>_XY000.tif
+	nuc/<nd2_stem>_XY001.tif
+```
+
+If you still have the older nested layout (`results/<nd2_stem>/XY_###/mip_*.tif`), rerun projection generation to migrate.
 
 ## 4. View Projections
 

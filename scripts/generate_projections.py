@@ -5,7 +5,9 @@ import sys
 import traceback
 from microglia_pipeline.config import load_config
 from microglia_pipeline.io_nd2 import read_positions
-from microglia_pipeline.preprocess import ensure_dir, save_xy_mips
+from microglia_pipeline.preprocess import ensure_dir
+import tifffile as tiff
+import numpy as np
 
 
 def _collect_nd2_paths(inputs):
@@ -37,20 +39,27 @@ def generate():
     repo_root = Path(__file__).resolve().parents[1]
     cfg = load_config(repo_root / 'config.yaml')
     nd2_paths = _collect_nd2_paths(cfg.inputs)
-    ensure_dir(Path(cfg.output_root))
+    out_root = ensure_dir(Path(cfg.output_root))
+    egfp_root = ensure_dir(out_root / 'egfp')
+    nuc_root = ensure_dir(out_root / 'nuc')
+
     for nd2_path in nd2_paths:
         nd2_stem = nd2_path.stem
-        nd2_out = ensure_dir(Path(cfg.output_root) / nd2_stem)
-        print(f"[generate] Processing {nd2_path.name} -> {nd2_out}")
+        print(f"[generate] Processing {nd2_path.name} -> {egfp_root} / {nuc_root}")
         for item in read_positions(
             nd2_path,
             cfg.channels.egfp_keywords,
             cfg.channels.nuc_keywords,
         ):
             xy = int(item['xy_index'])
-            xy_dir = ensure_dir(nd2_out / f"XY_{xy:03d}")
-            save_xy_mips(xy_dir, item['egfp_mip'], item['nuc_mip'])
-    print('[generate] Done.')
+            egfp_fname = egfp_root / f"{nd2_stem}_XY{xy:03d}.tif"
+            nuc_fname  = nuc_root  / f"{nd2_stem}_XY{xy:03d}.tif"
+            # ensure arrays are numpy
+            egfp_arr = np.asarray(item['egfp_mip'])
+            nuc_arr = np.asarray(item['nuc_mip'])
+            tiff.imwrite(str(egfp_fname), egfp_arr, photometric="minisblack")
+            tiff.imwrite(str(nuc_fname),  nuc_arr,  photometric="minisblack")
+    print('[generate] Done. Wrote flat layout under results/egfp and results/nuc')
 
 
 if __name__ == '__main__':
