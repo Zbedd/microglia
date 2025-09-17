@@ -59,7 +59,17 @@ All MIPs load into a single napari viewer.
 
 From here you may manually launch external plugins (e.g., Microglia-Analyzer) if installed; this repository does not automate them.
 
-## 5. Testing
+## 5. (Optional) Launch Microglia Analyzer Helper
+
+If you've installed the `microglia-analyzer` plugin, you can use the helper script to open napari without preloaded images and add the analyzer widget (if discovered):
+
+```bash
+python scripts/launch_microglia_analyzer.py
+```
+
+Click the plugin's 'Sources Folder' button yourself and choose `results/egfp/` (no auto selection is attempted).
+
+## 6. Testing
 
 ```bash
 pytest -q

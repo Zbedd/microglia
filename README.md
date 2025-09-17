@@ -4,7 +4,8 @@ Minimal, config-driven utilities to:
 
 1. Read **multipoint (XY) ND2 z-stacks** containing EGFP (and nuclei) channels.
 2. Generate per‑XY **maximum intensity projections (MIPs)** and store them on disk.
-3. Load previously generated projections into **napari** for manual inspection or downstream interactive analysis (e.g., with external plugins like Microglia-Analyzer run manually by the user).
+3. Load previously generated projections into **napari** for manual inspection.
+4. Optionally launch a helper that opens the **microglia-analyzer** plugin (no auto folder selection).
 
 This repository no longer attempts to automate third‑party plugin execution (widget/button workflows proved unsuitable for robust headless control). Instead it focuses on a clean separation of data preparation (deterministic, reproducible) and interactive analysis (exploratory, user‑driven).
 
@@ -29,8 +30,9 @@ docs/
   USAGE.md
 results/              # generated projections live here
 scripts/
-  generate_projections.py   # stage 1: produce MIPs
-  view_projections.py       # stage 2: open all MIPs in napari
+  generate_projections.py       # stage 1: produce MIPs
+  view_projections.py           # view all MIPs together
+  launch_microglia_analyzer.py  # open napari + microglia-analyzer widget (no images preloaded)
 src/
   microglia_pipeline/
     __init__.py
@@ -124,7 +126,7 @@ results/
 
 Legacy (previous) layout with nested `XY_###/mip_*.tif` folders is no longer produced; regenerate projections if you still have the old structure.
 
-### 2. View Projections
+### 2. View Projections (All at Once)
 
 Loads every `mip_*.tif` into a napari viewer using consistent naming.
 
@@ -132,7 +134,22 @@ Loads every `mip_*.tif` into a napari viewer using consistent naming.
 python scripts/view_projections.py
 ```
 
-You can now manually launch and operate any napari plugin (e.g., Microglia-Analyzer) from the GUI; outputs you create manually are not automatically captured by this toolkit (by design—separation of concerns).
+You can manually launch and operate any napari plugin (e.g., Microglia-Analyzer) from the GUI; outputs you create manually are not automatically captured by this toolkit (by design—separation of concerns).
+
+### 3. Launch Microglia Analyzer Helper (Optional)
+
+If the `microglia-analyzer` plugin is installed, this helper will:
+1. Start napari without preloaded images.
+2. Add the microglia-analyzer dock widget (if found).
+3. Let you click the plugin's 'Sources Folder' button yourself to choose `results/egfp/`.
+
+Run:
+
+```bash
+python scripts/launch_microglia_analyzer.py
+```
+
+Folder auto-selection is intentionally not attempted (interactive widget control only). This script does NOT execute analysis—only streamlines opening the plugin.
 
 ---
 
